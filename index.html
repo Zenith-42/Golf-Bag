@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Club Caddie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --turf-dark: #0b3d24;
+    --turf-mid: #145c34;
+    --turf-light: #1c7a45;
+    --sand: #d8c39c;
+    --sand-dark: #b89f72;
+    --ball: #f8f5ec;
+    --terracotta: #c1553a;
+    --ink: #16241c;
+    --paper: #f6f4ee;
+    --card: #ffffff;
+    --muted: #6b7a70;
+    --border: #e1ddd0;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 30px rgba(0,0,0,0.06);
+  }
+
+  header.top {
+    background: linear-gradient(135deg, var(--turf-dark), var(--turf-mid));
+    color: var(--ball);
+    padding: 20px 20px 16px;
+    text-align: center;
+  }
+
+  header.top h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  header.top .tagline {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    color: #cfe6d7;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    margin-top: 2px;
+  }
+
+  nav.tabs {
+    display: flex;
+    background: var(--turf-dark);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  nav.tabs button {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #a9c9b4;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 14px 6px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  nav.tabs button.active {
+    color: var(--ball);
+    border-bottom-color: var(--terracotta);
+  }
+
+  nav.tabs button:active {
+    background: rgba(255,255,255,0.05);
+  }
+
+  main {
+    flex: 1;
+    padding: 18px 16px 40px;
+  }
+
+  .panel {
+    display: none;
+  }
+
+  .panel.active {
+    display: block;
+    animation: fadein 0.18s ease;
+  }
+
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: center;
+    padding: 24px 12px;
+  }
+
+  /* Finder */
+  .yardage-input-wrap {
+    margin-bottom: 16px;
+  }
+
+  label.field-label {
+    display: block;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--ink);
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--turf-light);
+  }
+
+  .yardage-input-wrap input {
+    font-size: 1.8rem;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    text-align: center;
+    padding: 16px;
+    color: var(--turf-dark);
+  }
+
+  .rec-card {
+    background: linear-gradient(135deg, var(--turf-dark), #0e4a2b);
+    color: var(--ball);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+
+  .rec-card .rec-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #a9c9b4;
+    margin-bottom: 4px;
+  }
+
+  .rec-card .rec-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+  }
+
+  .rec-card .rec-range {
+    font-size: 0.95rem;
+    color: #cfe6d7;
+    margin-bottom: 10px;
+  }
+
+  .rec-card .rec-tag {
+    display: inline-block;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 5px 12px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.14);
+  }
+
+  .rec-card .rec-tag.inrange {
+    background: rgba(120, 210, 150, 0.25);
+    color: #b7f0c8;
+  }
+
+  .rec-card .rec-tag.off {
+    background: rgba(193, 85, 58, 0.35);
+    color: #ffd4c4;
+  }
+
+  .rec-card .rec-avg {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #cfe6d7;
+  }
+
+  .close-clubs-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 18px 4px 8px;
+  }
+
+  .close-club-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .close-club-row:active {
+    background: #f0ede3;
+  }
+
+  .close-club-row.selected {
+    border-color: var(--turf-light);
+    background: #eef7f0;
+  }
+
+  .close-club-row .name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .close-club-row .range {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .close-club-row .tag {
+    font-size: 0.72rem;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 100px;
+    background: #eee7d6;
+    color: #8a7a52;
+    white-space: nowrap;
+  }
+
+  .close-club-row .tag.inrange {
+    background: #dbf0e0;
+    color: #1c7a45;
+  }
+
+  /* Stance diagram */
+  .stance-card {
+    background: linear-gradient(160deg, var(--turf-dark) 0%, var(--turf-mid) 55%, var(--turf-light) 100%);
+    border-radius: 16px;
+    padding: 24px 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stance-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 24px);
+    pointer-events: none;
+  }
+
+  .stance-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #cfe6d7;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .stance-labels .arrow {
+    opacity: 0.65;
+    font-weight: 400;
+  }
+
+  .stance-rail-wrap {
+    position: relative;
+    height: 150px;
+    margin: 0 6px;
+  }
+
+  .stance-rail {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    top: 50%;
+    height: 4px;
+    background: rgba(255,255,255,0.22);
+    border-radius: 4px;
+    transform: translateY(-50%);
+  }
+
+  .stance-center-tick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 22px;
+    background: rgba(255,255,255,0.55);
+    transform: translate(-50%, -50%);
+  }
+
+  .stance-center-label {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + 16px);
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .foot {
+    position: absolute;
+    top: 50%;
+    width: 40px;
+    height: 96px;
+    background: linear-gradient(160deg, var(--sand), var(--sand-dark));
+    border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    transform: translateY(-50%);
+  }
+
+  .foot.lead {
+    left: 6px;
+    border-radius: 55% 45% 42% 48% / 62% 55% 45% 38%;
+  }
+
+  .foot.trail {
+    right: 6px;
+    border-radius: 45% 55% 48% 42% / 62% 55% 45% 38%;
+  }
+
+  .foot-label {
+    position: absolute;
+    top: calc(50% + 58px);
+    font-size: 0.62rem;
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+  }
+
+  .foot-label.lead { left: 6px; width: 40px; text-align: center; }
+  .foot-label.trail { right: 6px; width: 40px; text-align: center; }
+
+  .ball-marker {
+    position: absolute;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff, var(--ball) 60%, #ddd6c2 100%);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.06);
+    transform: translate(-50%, -50%);
+    transition: left 0.25s ease;
+    z-index: 2;
+  }
+
+  .ball-marker::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.08) 1px, transparent 1px);
+    background-size: 5px 5px;
+  }
+
+  .stance-info {
+    position: relative;
+    z-index: 1;
+    margin-top: 14px;
+    text-align: center;
+    color: var(--ball);
+  }
+
+  .stance-info .cat-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+
+  .stance-info .cat-desc {
+    font-size: 0.85rem;
+    color: #cfe6d7;
+  }
+
+  .stance-info .cat-pct {
+    margin-top: 6px;
+    font-size: 0.72rem;
+    color: #9fc2ac;
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 0.04em;
+  }
+
+  /* Stance tab category list */
+  .cat-list {
+    margin-top: 16px;
+  }
+
+  .cat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+
+  .cat-item.active {
+    border-color: var(--terracotta);
+    background: #fdf1ec;
+  }
+
+  .cat-item .cat-item-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+
+  .cat-item .cat-item-pct {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'Oswald', sans-serif;
+  }
+
+  /* My Bag */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .form-grid .full { grid-column: 1 / -1; }
+
+  .add-btn {
+    margin-top: 14px;
+    width: 100%;
+    background: var(--terracotta);
+    color: #fff;
+    border: none;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    padding: 13px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .add-btn:active {
+    filter: brightness(0.92);
+  }
+
+  .form-error {
+    color: var(--terracotta);
+    font-size: 0.82rem;
+    margin-top: 8px;
+    display: none;
+  }
+
+  .form-error.show { display: block; }
+
+  .club-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 15px;
+    margin-bottom: 12px;
+  }
+
+  .club-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .club-card-head .club-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .club-card-head .club-cat {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .remove-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .remove-btn:active {
+    background: #f4e2dc;
+    border-color: var(--terracotta);
+    color: var(--terracotta);
+  }
+
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .range-row input {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .range-row .dash {
+    color: var(--muted);
+  }
+
+  .range-row .unit {
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .distances-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eef2ec;
+    border: 1px solid var(--border);
+    color: var(--turf-dark);
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 5px 6px 5px 11px;
+    border-radius: 100px;
+  }
+
+  .chip button {
+    background: rgba(0,0,0,0.06);
+    border: none;
+    color: var(--muted);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+
+  .chip button:active {
+    background: var(--terracotta);
+    color: #fff;
+  }
+
+  .no-distances {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  .add-distance-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .add-distance-row input {
+    flex: 1;
+  }
+
+  .add-distance-row button {
+    background: var(--turf-mid);
+    color: #fff;
+    border: none;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .club-stats {
+    font-size: 0.82rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+
+  .club-stats strong {
+    color: var(--ink);
+  }
+
+  .bag-list-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 20px 4px 10px;
+  }
+
+  footer.appfoot {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 10px 20px 26px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <h1>⛳ Club Caddie</h1>
+    <div class="tagline">Your bag. Your yardages. Your stance.</div>
+  </header>
+
+  <nav class="tabs">
+    <button type="button" class="tab-btn active" data-tab="finder">Finder</button>
+    <button type="button" class="tab-btn" data-tab="bag">My Bag</button>
+    <button type="button" class="tab-btn" data-tab="stance">Stance</button>
+  </nav>
+
+  <main>
+    <!-- FINDER -->
+    <section class="panel active" id="panel-finder">
+      <div class="yardage-input-wrap">
+        <label class="field-label" for="yardage-input">Yardage to target</label>
+        <input type="number" id="yardage-input" inputmode="numeric" placeholder="e.g. 145" min="0">
+      </div>
+      <div id="finder-output"></div>
+    </section>
+
+    <!-- MY BAG -->
+    <section class="panel" id="panel-bag">
+      <div class="card">
+        <h3 style="margin:0 0 12px;font-size:0.95rem;">Add a club</h3>
+        <div class="form-grid">
+          <div class="full">
+            <label class="field-label" for="club-name">Name</label>
+            <input type="text" id="club-name" placeholder="e.g. 7 Iron">
+          </div>
+          <div class="full">
+            <label class="field-label" for="club-category">Category</label>
+            <select id="club-category"></select>
+          </div>
+          <div>
+            <label class="field-label" for="club-min">Min yardage</label>
+            <input type="number" id="club-min" min="0" placeholder="0">
+          </div>
+          <div>
+            <label class="field-label" for="club-max">Max yardage</label>
+            <input type="number" id="club-max" min="0" placeholder="0">
+          </div>
+        </div>
+        <button type="button" class="add-btn" id="add-club-btn">Add club</button>
+        <div class="form-error" id="add-club-error"></div>
+      </div>
+
+      <div class="bag-list-title">Your bag</div>
+      <div id="bag-list"></div>
+    </section>
+
+    <!-- STANCE -->
+    <section class="panel" id="panel-stance">
+      <div id="stance-diagram-holder"></div>
+      <div class="cat-list" id="stance-cat-list"></div>
+    </section>
+  </main>
+
+  <footer class="appfoot">Data is saved automatically to this browser.</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'club-caddie-bag';
+
+  var CATEGORIES = [
+    { key: 'Driver',                 desc: 'Just inside the front heel',            pct: 92 },
+    { key: 'Fairway Woods',          desc: "A ball's width inside the front heel",  pct: 84 },
+    { key: 'Hybrids',                desc: "A ball's width inside the front heel",  pct: 84 },
+    { key: 'Long Irons (2, 3, 4)',   desc: 'Center to slightly forward',            pct: 58 },
+    { key: 'Mid Irons (5, 6, 7)',    desc: 'Center',                                pct: 50 },
+    { key: 'Short Irons (8, 9)',     desc: 'Center',                                pct: 50 },
+    { key: 'Wedges',                 desc: 'Center to slightly back',               pct: 42 },
+    { key: 'Putter',                 desc: 'Slightly forward of center',            pct: 55 }
+  ];
+
+  function catByKey(key) {
+    for (var i = 0; i < CATEGORIES.length; i++) {
+      if (CATEGORIES[i].key === key) return CATEGORIES[i];
+    }
+    return null;
+  }
+
+  // ---------- Persistence ----------
+  var clubs = loadClubs();
+
+  function loadClubs() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveClubs() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clubs));
+    } catch (e) {
+      // storage unavailable / quota — ignore, in-memory state still works this session
+    }
+  }
+
+  function uid() {
+    return 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+  }
+
+  // ---------- Tabs ----------
+  var tabButtons = document.querySelectorAll('.tab-btn');
+  var panels = {
+    finder: document.getElementById('panel-finder'),
+    bag: document.getElementById('panel-bag'),
+    stance: document.getElementById('panel-stance')
+  };
+
+  tabButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tabButtons.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      Object.keys(panels).forEach(function (k) { panels[k].classList.remove('active'); });
+      panels[btn.dataset.tab].classList.add('active');
+      if (btn.dataset.tab === 'finder') renderFinder();
+      if (btn.dataset.tab === 'bag') renderBag();
+      if (btn.dataset.tab === 'stance') renderStanceTab();
+    });
+  });
+
+  // ---------- Stance diagram (shared renderer) ----------
+  function renderStanceDiagram(container, category) {
+    var pct = category.pct;
+    var leftPct = 100 - pct; // invert: 100% = left/front, so left-css-position = 100 - pct... wait see below
+
+    // Rail % table: 100% = front/lead foot side. Diagram: lead foot is on the LEFT.
+    // So rail % directly maps to "distance from trail(right) toward lead(left)".
+    // CSS 'left' position of marker (0 = at trail/right foot's rail start, moving left):
+    // We want pct=100 -> marker at left foot (left side, css left = ~ near 0% of rail width from left edge... )
+    // Simpler: rail runs left(lead,100%) to right(trail,0%). CSS left offset should be:
+    // cssLeftPercent = 100 - pct  (since css left=0 is the left edge of the rail, and pct=100 means AT the left edge)
+    var cssLeftPercent = 100 - pct;
+
+    var html = '';
+    html += '<div class="stance-card">';
+    html += '  <div class="stance-labels"><span>Target side</span><span class="arrow">&#8212;</span><span>Trail side</span></div>';
+    html += '  <div class="stance-rail-wrap">';
+    html += '    <div class="stance-rail"></div>';
+    html += '    <div class="stance-center-tick"></div>';
+    html += '    <div class="stance-center-label">center</div>';
+    html += '    <div class="foot lead"></div>';
+    html += '    <div class="foot trail"></div>';
+    html += '    <div class="foot-label lead">Lead</div>';
+    html += '    <div class="foot-label trail">Trail</div>';
+    html += '    <div class="ball-marker" style="left: calc(22px + (100% - 44px) * ' + (cssLeftPercent / 100) + ');"></div>';
+    html += '  </div>';
+    html += '  <div class="stance-info">';
+    html += '    <div class="cat-name">' + escapeHtml(category.key) + '</div>';
+    html += '    <div class="cat-desc">' + escapeHtml(category.desc) + '</div>';
+    html += '    <div class="cat-pct">' + pct + '% along stance rail</div>';
+    html += '  </div>';
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ---------- Finder ----------
+  var yardageInput = document.getElementById('yardage-input');
+  var finderOutput = document.getElementById('finder-output');
+  var finderPreviewCategory = null; // category key currently previewed from "closest clubs" list
+
+  yardageInput.addEventListener('input', function () {
+    finderPreviewCategory = null;
+    renderFinder();
+  });
+
+  function avg(arr) {
+    if (!arr || !arr.length) return null;
+    var sum = arr.reduce(function (a, b) { return a + b; }, 0);
+    return sum / arr.length;
+  }
+
+  function gapInfo(club, yardage) {
+    // returns { gap: number, status: 'in'|'short'|'long', diffYards: number, mid: number }
+    if (yardage >= club.minYardage && yardage <= club.maxYardage) {
+      return { gap: 0, status: 'in', diffYards: 0, mid: (club.minYardage + club.maxYardage) / 2 };
+    }
+    if (yardage < club.minYardage) {
+      var d = club.minYardage - yardage;
+      return { gap: d, status: 'long', diffYards: d, mid: (club.minYardage + club.maxYardage) / 2 };
+      // status 'long' meaning: you need more club / target is beyond... actually define carefully below
+    }
+    var d2 = yardage - club.maxYardage;
+    return { gap: d2, status: 'short', diffYards: d2, mid: (club.minYardage + club.maxYardage) / 2 };
+  }
+
+  // NOTE on status semantics (used in UI copy):
+  // - yardage < club.minYardage  => the target is SHORTER than this club's range -> this club goes TOO LONG (club "long" for the shot)
+  // - yardage > club.maxYardage  => the target is FARTHER than this club's range -> this club falls SHORT (club "short" for the shot)
+  // We'll express this from the shot's perspective: "X yds short" means the club won't reach; "X yds long" means the club overshoots.
+
+  function classify(club, yardage) {
+    if (yardage >= club.minYardage && yardage <= club.maxYardage) {
+      return { inRange: true, diff: 0, mid: (club.minYardage + club.maxYardage) / 2 };
+    }
+    if (yardage > club.maxYardage) {
+      return { inRange: false, diff: yardage - club.maxYardage, direction: 'short', mid: (club.minYardage + club.maxYardage) / 2 };
+    }
+    var diff = club.minYardage - yardage;
+    return { inRange: false, diff: diff, direction: 'long', mid: (club.minYardage + club.maxYardage) / 2 };
+  }
+
+  function rankedClubs(yardage) {
+    return clubs.map(function (c) {
+      var info = classify(c, yardage);
+      return { club: c, info: info };
+    }).sort(function (a, b) {
+      if (a.info.diff !== b.info.diff) return a.info.diff - b.info.diff;
+      var am = Math.abs(a.info.mid - yardage);
+      var bm = Math.abs(b.info.mid - yardage);
+      return am - bm;
+    });
+  }
+
+  function tagLabel(info) {
+    if (info.inRange) return 'In range';
+    if (info.direction === 'short') return info.diff + ' yd short';
+    return info.diff + ' yd long';
+  }
+
+  function renderFinder() {
+    if (!clubs.length) {
+      finderOutput.innerHTML = '<div class="card"><div class="hint">Your bag is empty. Head to <strong>My Bag</strong> to add some clubs first.</div></div>';
+      return;
+    }
+    var raw = yardageInput.value;
+    if (raw === '' || raw === null) {
+      finderOutput.innerHTML = '<div class="card"><div class="hint">Enter a yardage above to get a club recommendation.</div></div>';
+      return;
+    }
+    var yardage = parseFloat(raw);
+    if (isNaN(yardage)) {
+      finderOutput.innerHTML = '<div class="card"><div class="hint">Enter a valid number.</div></div>';
+      return;
+    }
+
+    var ranked = rankedClubs(yardage);
+    var best = ranked[0];
+    var rest = ranked.slice(1, 5);
+
+    var previewClub = best.club;
+    if (finderPreviewCategory) {
+      var found = ranked.find(function (r) { return r.club.id === finderPreviewCategory; });
+      if (found) previewClub = found.club;
+    }
+    var previewCat = catByKey(previewClub.category);
+
+    var html = '';
+
+    html += '<div class="rec-card">';
+    html += '  <div class="rec-label">Recommended club</div>';
+    html += '  <div class="rec-name">' + escapeHtml(best.club.name) + '</div>';
+    html += '  <div class="rec-range">' + best.club.minYardage + ' – ' + best.club.maxYardage + ' yds &middot; ' + escapeHtml(best.club.category) + '</div>';
+    html += '  <span class="rec-tag ' + (best.info.inRange ? 'inrange' : 'off') + '">' + tagLabel(best.info) + '</span>';
+    var a = avg(best.club.distances);
+    if (a !== null) {
+      html += '  <div class="rec-avg">Logged average: ' + Math.round(a) + ' yds over ' + best.club.distances.length + ' shot' + (best.club.distances.length === 1 ? '' : 's') + '</div>';
+    }
+    html += '</div>';
+
+    var diagramHolder = document.createElement('div');
+    if (finderPreviewCategory && previewClub.id !== best.club.id) {
+      // still show; renderStanceDiagram writes into holder below via innerHTML string, so build separately
+    }
+    html += '<div id="finder-stance-holder"></div>';
+
+    if (rest.length) {
+      html += '<div class="close-clubs-title">Other close options</div>';
+      rest.forEach(function (r) {
+        var selected = previewClub.id === r.club.id;
+        html += '<div class="close-club-row' + (selected ? ' selected' : '') + '" data-club-id="' + r.club.id + '">';
+        html += '  <div>';
+        html += '    <div class="name">' + escapeHtml(r.club.name) + '</div>';
+        html += '    <div class="range">' + r.club.minYardage + ' – ' + r.club.maxYardage + ' yds</div>';
+        html += '  </div>';
+        html += '  <div class="tag' + (r.info.inRange ? ' inrange' : '') + '">' + tagLabel(r.info) + '</div>';
+        html += '</div>';
+      });
+    }
+
+    finderOutput.innerHTML = html;
+
+    var stanceHolder = document.getElementById('finder-stance-holder');
+    if (previewCat) renderStanceDiagram(stanceHolder, previewCat);
+
+    finderOutput.querySelectorAll('.close-club-row').forEach(function (row) {
+      row.addEventListener('click', function () {
+        finderPreviewCategory = row.dataset.clubId;
+        renderFinder();
+      });
+    });
+  }
+
+  // ---------- My Bag ----------
+  var categorySelect = document.getElementById('club-category');
+  CATEGORIES.forEach(function (c) {
+    var opt = document.createElement('option');
+    opt.value = c.key;
+    opt.textContent = c.key;
+    categorySelect.appendChild(opt);
+  });
+
+  var nameInput = document.getElementById('club-name');
+  var minInput = document.getElementById('club-min');
+  var maxInput = document.getElementById('club-max');
+  var addBtn = document.getElementById('add-club-btn');
+  var addError = document.getElementById('add-club-error');
+  var bagList = document.getElementById('bag-list');
+
+  addBtn.addEventListener('click', function () {
+    var name = nameInput.value.trim();
+    var category = categorySelect.value;
+    var minV = parseFloat(minInput.value);
+    var maxV = parseFloat(maxInput.value);
+
+    if (!name) {
+      showAddError('Please enter a club name.');
+      return;
+    }
+    if (minInput.value === '' || maxInput.value === '' || isNaN(minV) || isNaN(maxV) || minV <= 0 || maxV <= 0) {
+      showAddError('Please enter both a min and max yardage greater than 0.');
+      return;
+    }
+    if (minV > maxV) {
+      var tmp = minV; minV = maxV; maxV = tmp;
+    }
+
+    clubs.push({
+      id: uid(),
+      name: name,
+      category: category,
+      minYardage: minV,
+      maxYardage: maxV,
+      distances: []
+    });
+    saveClubs();
+
+    nameInput.value = '';
+    minInput.value = '';
+    maxInput.value = '';
+    hideAddError();
+    renderBag();
+  });
+
+  function showAddError(msg) {
+    addError.textContent = msg;
+    addError.classList.add('show');
+  }
+  function hideAddError() {
+    addError.classList.remove('show');
+    addError.textContent = '';
+  }
+
+  function renderBag() {
+    if (!clubs.length) {
+      bagList.innerHTML = '<div class="hint">No clubs yet. Add your first club above.</div>';
+      return;
+    }
+
+    var sorted = clubs.slice().sort(function (a, b) { return b.maxYardage - a.maxYardage; });
+
+    var html = '';
+    sorted.forEach(function (club) {
+      var a = avg(club.distances);
+      html += '<div class="club-card" data-id="' + club.id + '">';
+      html += '  <div class="club-card-head">';
+      html += '    <div>';
+      html += '      <div class="club-name">' + escapeHtml(club.name) + '</div>';
+      html += '      <div class="club-cat">' + escapeHtml(club.category) + '</div>';
+      html += '    </div>';
+      html += '    <button type="button" class="remove-btn" data-action="remove-club">Remove</button>';
+      html += '  </div>';
+
+      html += '  <div class="range-row">';
+      html += '    <input type="number" min="0" class="min-input" value="' + club.minYardage + '">';
+      html += '    <span class="dash">&ndash;</span>';
+      html += '    <input type="number" min="0" class="max-input" value="' + club.maxYardage + '">';
+      html += '    <span class="unit">yds</span>';
+      html += '  </div>';
+
+      html += '  <div class="distances-label">Logged distances</div>';
+      if (club.distances.length) {
+        html += '  <div class="chips">';
+        club.distances.forEach(function (d, idx) {
+          html += '<span class="chip">' + d + ' yds <button type="button" data-action="remove-distance" data-idx="' + idx + '">&times;</button></span>';
+        });
+        html += '  </div>';
+      } else {
+        html += '  <div class="no-distances">No shots logged yet.</div>';
+      }
+
+      html += '  <div class="add-distance-row">';
+      html += '    <input type="number" min="0" placeholder="Add a shot distance" class="new-distance-input">';
+      html += '    <button type="button" data-action="add-distance">Log</button>';
+      html += '  </div>';
+
+      html += '  <div class="club-stats">';
+      html += '    <span>Range: <strong>' + club.minYardage + '&ndash;' + club.maxYardage + ' yds</strong></span>';
+      if (a !== null) {
+        html += '    <span>Avg: <strong>' + Math.round(a) + ' yds</strong> (' + club.distances.length + ')</span>';
+      } else {
+        html += '    <span>No shots logged</span>';
+      }
+      html += '  </div>';
+
+      html += '</div>';
+    });
+
+    bagList.innerHTML = html;
+    wireBagCardEvents();
+  }
+
+  function findClub(id) {
+    for (var i = 0; i < clubs.length; i++) {
+      if (clubs[i].id === id) return clubs[i];
+    }
+    return null;
+  }
+
+  function wireBagCardEvents() {
+    bagList.querySelectorAll('.club-card').forEach(function (cardEl) {
+      var id = cardEl.dataset.id;
+      var club = findClub(id);
+      if (!club) return;
+
+      var minEl = cardEl.querySelector('.min-input');
+      var maxEl = cardEl.querySelector('.max-input');
+
+      minEl.addEventListener('change', function () {
+        var v = parseFloat(minEl.value);
+        if (isNaN(v) || v <= 0) { minEl.value = club.minYardage; return; }
+        if (v > club.maxYardage) {
+          club.minYardage = club.maxYardage;
+          club.maxYardage = v;
+        } else {
+          club.minYardage = v;
+        }
+        saveClubs();
+        renderBag();
+      });
+
+      maxEl.addEventListener('change', function () {
+        var v = parseFloat(maxEl.value);
+        if (isNaN(v) || v <= 0) { maxEl.value = club.maxYardage; return; }
+        if (v < club.minYardage) {
+          club.maxYardage = club.minYardage;
+          club.minYardage = v;
+        } else {
+          club.maxYardage = v;
+        }
+        saveClubs();
+        renderBag();
+      });
+
+      cardEl.querySelector('[data-action="remove-club"]').addEventListener('click', function () {
+        clubs = clubs.filter(function (c) { return c.id !== id; });
+        saveClubs();
+        renderBag();
+      });
+
+      var distInput = cardEl.querySelector('.new-distance-input');
+      var logBtn = cardEl.querySelector('[data-action="add-distance"]');
+
+      function commitDistance() {
+        var v = parseFloat(distInput.value);
+        if (isNaN(v) || v <= 0) return;
+        club.distances.push(v);
+        saveClubs();
+        renderBag();
+      }
+
+      logBtn.addEventListener('click', commitDistance);
+      distInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commitDistance();
+        }
+      });
+
+      cardEl.querySelectorAll('[data-action="remove-distance"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var idx = parseInt(btn.dataset.idx, 10);
+          club.distances.splice(idx, 1);
+          saveClubs();
+          renderBag();
+        });
+      });
+    });
+  }
+
+  // ---------- Stance tab ----------
+  var currentStanceCategory = CATEGORIES[0].key;
+  var stanceHolder = document.getElementById('stance-diagram-holder');
+  var stanceCatList = document.getElementById('stance-cat-list');
+
+  function renderStanceTab() {
+    var cat = catByKey(currentStanceCategory);
+    renderStanceDiagram(stanceHolder, cat);
+
+    var html = '';
+    CATEGORIES.forEach(function (c) {
+      var active = c.key === currentStanceCategory;
+      html += '<div class="cat-item' + (active ? ' active' : '') + '" data-cat="' + escapeHtml(c.key) + '">';
+      html += '  <span class="cat-item-name">' + escapeHtml(c.key) + '</span>';
+      html += '  <span class="cat-item-pct">' + c.pct + '%</span>';
+      html += '</div>';
+    });
+    stanceCatList.innerHTML = html;
+
+    stanceCatList.querySelectorAll('.cat-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        currentStanceCategory = item.dataset.cat;
+        renderStanceTab();
+      });
+    });
+  }
+
+  // ---------- Init ----------
+  renderFinder();
+  renderStanceTab();
+})();
+</script>
+</body>
+</html>
