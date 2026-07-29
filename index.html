@@ -701,6 +701,49 @@
     margin: 20px 4px 10px;
   }
 
+  .backup-hint {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0 0 12px;
+  }
+
+  .backup-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .backup-actions button {
+    flex: 1;
+    margin-top: 0;
+  }
+
+  .backup-actions .export-btn {
+    background: var(--turf-mid);
+  }
+
+  .backup-actions .import-btn {
+    background: var(--terracotta);
+  }
+
+  .import-status {
+    font-size: 0.82rem;
+    margin-top: 10px;
+    display: none;
+  }
+
+  .import-status.show {
+    display: block;
+  }
+
+  .import-status.error {
+    color: var(--terracotta);
+  }
+
+  .import-status.success {
+    color: var(--turf-mid);
+  }
+
   footer.appfoot {
     text-align: center;
     font-size: 0.72rem;
@@ -734,6 +777,17 @@
 
     <!-- MY BAG -->
     <section class="panel" id="panel-bag">
+      <div class="card">
+        <h3 style="margin:0 0 8px;font-size:0.95rem;">Backup &amp; restore</h3>
+        <p class="backup-hint">Export your bag before updating the app, then import it back in afterward so you don't lose your clubs or logged shots.</p>
+        <div class="backup-actions">
+          <button type="button" class="add-btn export-btn" id="export-btn">Export bag</button>
+          <button type="button" class="add-btn import-btn" id="import-btn">Import bag</button>
+        </div>
+        <input type="file" id="import-file-input" accept="application/json,.json" style="display:none;">
+        <div class="import-status" id="import-status"></div>
+      </div>
+
       <div class="card">
         <h3 style="margin:0 0 12px;font-size:0.95rem;">Add a club</h3>
         <div class="form-grid">
@@ -1079,6 +1133,90 @@
   function hideAddError() {
     addError.classList.remove('show');
     addError.textContent = '';
+  }
+
+  // ---------- Backup & restore ----------
+  var exportBtn = document.getElementById('export-btn');
+  var importBtn = document.getElementById('import-btn');
+  var importFileInput = document.getElementById('import-file-input');
+  var importStatus = document.getElementById('import-status');
+
+  exportBtn.addEventListener('click', function () {
+    var dataStr = JSON.stringify(clubs, null, 2);
+    var uri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    var a = document.createElement('a');
+    a.href = uri;
+    var today = new Date().toISOString().slice(0, 10);
+    a.download = 'club-caddie-backup-' + today + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  importBtn.addEventListener('click', function () {
+    importFileInput.click();
+  });
+
+  importFileInput.addEventListener('change', function () {
+    var file = importFileInput.files[0];
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function () {
+      var parsed;
+      try {
+        parsed = JSON.parse(reader.result);
+      } catch (e) {
+        showImportStatus('That file is not valid JSON.', 'error');
+        importFileInput.value = '';
+        return;
+      }
+
+      var cleaned = parseImportedClubs(parsed);
+      if (cleaned === null) {
+        showImportStatus("That file doesn't look like a Club Caddie backup.", 'error');
+        importFileInput.value = '';
+        return;
+      }
+
+      if (clubs.length && !confirm('Import will replace your current bag (' + clubs.length + ' club' + (clubs.length === 1 ? '' : 's') + ') with ' + cleaned.length + ' from the file. Continue?')) {
+        importFileInput.value = '';
+        return;
+      }
+
+      clubs = cleaned;
+      saveClubs();
+      showImportStatus('Imported ' + cleaned.length + ' club' + (cleaned.length === 1 ? '' : 's') + '.', 'success');
+      importFileInput.value = '';
+      renderBag();
+    };
+    reader.readAsText(file);
+  });
+
+  function parseImportedClubs(parsed) {
+    if (!Array.isArray(parsed)) return null;
+    var cleaned = [];
+    for (var i = 0; i < parsed.length; i++) {
+      var item = parsed[i];
+      if (!item || typeof item.name !== 'string' || typeof item.category !== 'string' ||
+          typeof item.minYardage !== 'number' || typeof item.maxYardage !== 'number') {
+        return null;
+      }
+      cleaned.push({
+        id: uid(),
+        name: item.name,
+        category: item.category,
+        minYardage: item.minYardage,
+        maxYardage: item.maxYardage,
+        distances: Array.isArray(item.distances) ? item.distances.filter(function (d) { return typeof d === 'number'; }) : []
+      });
+    }
+    return cleaned;
+  }
+
+  function showImportStatus(msg, kind) {
+    importStatus.textContent = msg;
+    importStatus.className = 'import-status show ' + kind;
   }
 
   function renderBag() {
