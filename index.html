@@ -283,6 +283,12 @@
     color: var(--muted);
   }
 
+  .range-avg-note {
+    font-size: 0.74rem;
+    color: var(--turf-mid);
+    margin-top: 2px;
+  }
+
   .close-club-row .tag {
     font-size: 0.72rem;
     font-family: 'Oswald', sans-serif;
@@ -954,34 +960,37 @@
     return sum / arr.length;
   }
 
-  function gapInfo(club, yardage) {
-    // returns { gap: number, status: 'in'|'short'|'long', diffYards: number, mid: number }
-    if (yardage >= club.minYardage && yardage <= club.maxYardage) {
-      return { gap: 0, status: 'in', diffYards: 0, mid: (club.minYardage + club.maxYardage) / 2 };
-    }
-    if (yardage < club.minYardage) {
-      var d = club.minYardage - yardage;
-      return { gap: d, status: 'long', diffYards: d, mid: (club.minYardage + club.maxYardage) / 2 };
-      // status 'long' meaning: you need more club / target is beyond... actually define carefully below
-    }
-    var d2 = yardage - club.maxYardage;
-    return { gap: d2, status: 'short', diffYards: d2, mid: (club.minYardage + club.maxYardage) / 2 };
-  }
-
-  // NOTE on status semantics (used in UI copy):
+  // NOTE on direction semantics (used in UI copy):
   // - yardage < club.minYardage  => the target is SHORTER than this club's range -> this club goes TOO LONG (club "long" for the shot)
   // - yardage > club.maxYardage  => the target is FARTHER than this club's range -> this club falls SHORT (club "short" for the shot)
   // We'll express this from the shot's perspective: "X yds short" means the club won't reach; "X yds long" means the club overshoots.
 
   function classify(club, yardage) {
-    if (yardage >= club.minYardage && yardage <= club.maxYardage) {
-      return { inRange: true, diff: 0, mid: (club.minYardage + club.maxYardage) / 2 };
-    }
-    if (yardage > club.maxYardage) {
-      return { inRange: false, diff: yardage - club.maxYardage, direction: 'short', mid: (club.minYardage + club.maxYardage) / 2 };
-    }
-    var diff = club.minYardage - yardage;
-    return { inRange: false, diff: diff, direction: 'long', mid: (club.minYardage + club.maxYardage) / 2 };
+    var mid = (club.minYardage + club.maxYardage) / 2;
+    var inRange = yardage >= club.minYardage && yardage <= club.maxYardage;
+    var rangeGap = inRange ? 0 : (yardage > club.maxYardage ? yardage - club.maxYardage : club.minYardage - yardage);
+    var direction = inRange ? null : (yardage > club.maxYardage ? 'short' : 'long');
+
+    var avgDistance = avg(club.distances);
+    var avgGap = avgDistance !== null ? Math.abs(yardage - avgDistance) : null;
+
+    // Rank using whichever signal is a closer fit: the club's stated range, or its
+    // logged real-world average (if the user has actually hit this club before).
+    var usesAvg = avgGap !== null && avgGap < rangeGap;
+    var effectiveGap = usesAvg ? avgGap : rangeGap;
+    var refPoint = usesAvg ? avgDistance : mid;
+
+    return {
+      inRange: inRange,
+      diff: rangeGap,
+      direction: direction,
+      mid: mid,
+      avg: avgDistance,
+      avgGap: avgGap,
+      usesAvg: usesAvg,
+      effectiveGap: effectiveGap,
+      refPoint: refPoint
+    };
   }
 
   function rankedClubs(yardage) {
@@ -989,9 +998,9 @@
       var info = classify(c, yardage);
       return { club: c, info: info };
     }).sort(function (a, b) {
-      if (a.info.diff !== b.info.diff) return a.info.diff - b.info.diff;
-      var am = Math.abs(a.info.mid - yardage);
-      var bm = Math.abs(b.info.mid - yardage);
+      if (a.info.effectiveGap !== b.info.effectiveGap) return a.info.effectiveGap - b.info.effectiveGap;
+      var am = Math.abs(a.info.refPoint - yardage);
+      var bm = Math.abs(b.info.refPoint - yardage);
       return am - bm;
     });
   }
@@ -1000,6 +1009,13 @@
     if (info.inRange) return 'In range';
     if (info.direction === 'short') return info.diff + ' yd short';
     return info.diff + ' yd long';
+  }
+
+  function avgNoteLabel(info) {
+    if (info.avg === null) return null;
+    var rounded = Math.round(info.avg);
+    if (info.avgGap <= 2) return 'Your avg (' + rounded + ' yds) matches this shot';
+    return 'Your avg: ' + rounded + ' yds (' + Math.round(info.avgGap) + ' yd off)';
   }
 
   function renderFinder() {
@@ -1032,13 +1048,12 @@
     var html = '';
 
     html += '<div class="rec-card">';
-    html += '  <div class="rec-label">Recommended club</div>';
+    html += '  <div class="rec-label">Recommended club' + (best.info.usesAvg ? ' &middot; matched by your logged shots' : '') + '</div>';
     html += '  <div class="rec-name">' + escapeHtml(best.club.name) + '</div>';
     html += '  <div class="rec-range">' + best.club.minYardage + ' – ' + best.club.maxYardage + ' yds &middot; ' + escapeHtml(best.club.category) + '</div>';
     html += '  <span class="rec-tag ' + (best.info.inRange ? 'inrange' : 'off') + '">' + tagLabel(best.info) + '</span>';
-    var a = avg(best.club.distances);
-    if (a !== null) {
-      html += '  <div class="rec-avg">Logged average: ' + Math.round(a) + ' yds over ' + best.club.distances.length + ' shot' + (best.club.distances.length === 1 ? '' : 's') + '</div>';
+    if (best.club.distances.length) {
+      html += '  <div class="rec-avg">' + avgNoteLabel(best.info) + ' &middot; ' + best.club.distances.length + ' shot' + (best.club.distances.length === 1 ? '' : 's') + ' logged</div>';
     }
     html += '</div>';
 
@@ -1052,10 +1067,14 @@
       html += '<div class="close-clubs-title">Other close options</div>';
       rest.forEach(function (r) {
         var selected = previewClub.id === r.club.id;
+        var note = avgNoteLabel(r.info);
         html += '<div class="close-club-row' + (selected ? ' selected' : '') + '" data-club-id="' + r.club.id + '">';
         html += '  <div>';
         html += '    <div class="name">' + escapeHtml(r.club.name) + '</div>';
         html += '    <div class="range">' + r.club.minYardage + ' – ' + r.club.maxYardage + ' yds</div>';
+        if (note) {
+          html += '    <div class="range-avg-note">' + note + '</div>';
+        }
         html += '  </div>';
         html += '  <div class="tag' + (r.info.inRange ? ' inrange' : '') + '">' + tagLabel(r.info) + '</div>';
         html += '</div>';
