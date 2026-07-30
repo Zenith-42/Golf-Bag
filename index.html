@@ -413,7 +413,7 @@
 
   .stance-rail-wrap {
     position: relative;
-    height: 150px;
+    height: 320px;
     margin: 0 6px;
   }
 
@@ -426,6 +426,37 @@
     background: rgba(255,255,255,0.22);
     border-radius: 4px;
     transform: translateY(-50%);
+  }
+
+  .ball-line {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    height: 0;
+    border-top: 2px dashed rgba(255,255,255,0.4);
+    transform: translateY(-50%);
+    transition: top 0.25s ease;
+  }
+
+  .ball-connector {
+    position: absolute;
+    top: 50%;
+    width: 0;
+    border-left: 1px dashed rgba(255,255,255,0.4);
+    transform: translateX(-50%);
+    transition: left 0.25s ease, height 0.25s ease;
+  }
+
+  .away-label {
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    text-align: right;
+    line-height: 1.35;
   }
 
   .stance-center-tick {
@@ -492,7 +523,7 @@
     background: radial-gradient(circle at 35% 30%, #ffffff, var(--ball) 60%, #ddd6c2 100%);
     box-shadow: 0 3px 8px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.06);
     transform: translate(-50%, -50%);
-    transition: left 0.25s ease;
+    transition: left 0.25s ease, top 0.25s ease;
     z-index: 2;
   }
 
@@ -1008,16 +1039,28 @@
 
   var STORAGE_KEY = 'club-caddie-bag';
 
+  // standIn = approximate distance (inches) from the toe line out to the ball at address.
+  // Longer clubs require standing farther from the ball. Anchored to two commonly-cited
+  // instructional figures (driver ~34in, mid-iron/5-iron ~24in, toe-to-ball-center,
+  // pro-average setups) and interpolated/extrapolated linearly against standard club
+  // length for the other categories. See chat for sources.
   var CATEGORIES = [
-    { key: 'Driver',                 desc: 'Just inside the front heel',            pct: 92 },
-    { key: 'Fairway Woods',          desc: "A ball's width inside the front heel",  pct: 84 },
-    { key: 'Hybrids',                desc: "A ball's width inside the front heel",  pct: 84 },
-    { key: 'Long Irons (2, 3, 4)',   desc: 'Center to slightly forward',            pct: 58 },
-    { key: 'Mid Irons (5, 6, 7)',    desc: 'Center',                                pct: 50 },
-    { key: 'Short Irons (8, 9)',     desc: 'Center',                                pct: 50 },
-    { key: 'Wedges',                 desc: 'Center to slightly back',               pct: 42 },
-    { key: 'Putter',                 desc: 'Slightly forward of center',            pct: 55 }
+    { key: 'Driver',                 desc: 'Just inside the front heel',            pct: 92, standIn: 34 },
+    { key: 'Fairway Woods',          desc: "A ball's width inside the front heel",  pct: 84, standIn: 29 },
+    { key: 'Hybrids',                desc: "A ball's width inside the front heel",  pct: 84, standIn: 26 },
+    { key: 'Long Irons (2, 3, 4)',   desc: 'Center to slightly forward',            pct: 58, standIn: 25 },
+    { key: 'Mid Irons (5, 6, 7)',    desc: 'Center',                                pct: 50, standIn: 24 },
+    { key: 'Short Irons (8, 9)',     desc: 'Center',                                pct: 50, standIn: 21 },
+    { key: 'Wedges',                 desc: 'Center to slightly back',               pct: 42, standIn: 19 },
+    { key: 'Putter',                 desc: 'Slightly forward of center',            pct: 55, standIn: 18 }
   ];
+
+  var STAND_MIN_IN = 18, STAND_MAX_IN = 34, STAND_MIN_PX = 90, STAND_MAX_PX = 135;
+
+  function standDistancePx(standIn) {
+    var t = (standIn - STAND_MIN_IN) / (STAND_MAX_IN - STAND_MIN_IN);
+    return Math.round(STAND_MIN_PX + t * (STAND_MAX_PX - STAND_MIN_PX));
+  }
 
   function catByKey(key) {
     for (var i = 0; i < CATEGORIES.length; i++) {
@@ -1076,7 +1119,6 @@
   // ---------- Stance diagram (shared renderer) ----------
   function renderStanceDiagram(container, category) {
     var pct = category.pct;
-    var leftPct = 100 - pct; // invert: 100% = left/front, so left-css-position = 100 - pct... wait see below
 
     // Rail % table: 100% = front/lead foot side. Diagram: lead foot is on the LEFT.
     // So rail % directly maps to "distance from trail(right) toward lead(left)".
@@ -1085,6 +1127,8 @@
     // Simpler: rail runs left(lead,100%) to right(trail,0%). CSS left offset should be:
     // cssLeftPercent = 100 - pct  (since css left=0 is the left edge of the rail, and pct=100 means AT the left edge)
     var cssLeftPercent = 100 - pct;
+    var leftExpr = 'calc(22px + (100% - 44px) * ' + (cssLeftPercent / 100) + ')';
+    var ballOffsetPx = standDistancePx(category.standIn);
 
     var html = '';
     html += '<div class="stance-card">';
@@ -1097,12 +1141,15 @@
     html += '    <div class="foot trail"></div>';
     html += '    <div class="foot-label lead">Lead</div>';
     html += '    <div class="foot-label trail">Trail</div>';
-    html += '    <div class="ball-marker" style="left: calc(22px + (100% - 44px) * ' + (cssLeftPercent / 100) + ');"></div>';
+    html += '    <div class="ball-line" style="top: calc(50% + ' + ballOffsetPx + 'px);"></div>';
+    html += '    <div class="ball-connector" style="left: ' + leftExpr + '; height: ' + ballOffsetPx + 'px;"></div>';
+    html += '    <div class="ball-marker" style="left: ' + leftExpr + '; top: calc(50% + ' + ballOffsetPx + 'px);"></div>';
+    html += '    <div class="away-label">away from you<br>&#8595;</div>';
     html += '  </div>';
     html += '  <div class="stance-info">';
     html += '    <div class="cat-name">' + escapeHtml(category.key) + '</div>';
     html += '    <div class="cat-desc">' + escapeHtml(category.desc) + '</div>';
-    html += '    <div class="cat-pct">' + pct + '% along stance rail</div>';
+    html += '    <div class="cat-pct">' + pct + '% along stance rail &middot; &asymp;' + category.standIn + '&Prime; from your toe line</div>';
     html += '  </div>';
     html += '</div>';
     container.innerHTML = html;
