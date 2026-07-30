@@ -421,7 +421,7 @@
     position: absolute;
     left: 22px;
     right: 22px;
-    top: 50%;
+    top: 220px;
     height: 4px;
     background: rgba(255,255,255,0.22);
     border-radius: 4px;
@@ -440,11 +440,10 @@
 
   .ball-connector {
     position: absolute;
-    top: 50%;
     width: 0;
     border-left: 1px dashed rgba(255,255,255,0.4);
     transform: translateX(-50%);
-    transition: left 0.25s ease, height 0.25s ease;
+    transition: left 0.25s ease, top 0.25s ease, height 0.25s ease;
   }
 
   .away-label {
@@ -462,7 +461,7 @@
   .stance-center-tick {
     position: absolute;
     left: 50%;
-    top: 50%;
+    top: 220px;
     width: 2px;
     height: 22px;
     background: rgba(255,255,255,0.55);
@@ -472,7 +471,7 @@
   .stance-center-label {
     position: absolute;
     left: 50%;
-    top: calc(50% + 16px);
+    top: calc(220px + 16px);
     transform: translateX(-50%);
     font-size: 0.6rem;
     color: rgba(255,255,255,0.5);
@@ -482,7 +481,7 @@
 
   .foot {
     position: absolute;
-    top: 50%;
+    top: 220px;
     width: 40px;
     height: 96px;
     background: linear-gradient(160deg, var(--sand), var(--sand-dark));
@@ -503,7 +502,7 @@
 
   .foot-label {
     position: absolute;
-    top: calc(50% + 58px);
+    top: calc(220px + 58px);
     font-size: 0.62rem;
     font-family: 'Oswald', sans-serif;
     letter-spacing: 0.04em;
@@ -1129,11 +1128,17 @@
     var cssLeftPercent = 100 - pct;
     var leftExpr = 'calc(22px + (100% - 44px) * ' + (cssLeftPercent / 100) + ')';
     var ballOffsetPx = standDistancePx(category.standIn);
+    var RAIL_Y = 220; // px from top of .stance-rail-wrap where the toe line sits
+    var ballTopPx = RAIL_Y - ballOffsetPx; // ball line sits above (in front of) the toe line
 
     var html = '';
     html += '<div class="stance-card">';
     html += '  <div class="stance-labels"><span>Target side</span><span class="arrow">&#8212;</span><span>Trail side</span></div>';
     html += '  <div class="stance-rail-wrap">';
+    html += '    <div class="away-label">in front of you<br>&#8593;</div>';
+    html += '    <div class="ball-line" style="top: ' + ballTopPx + 'px;"></div>';
+    html += '    <div class="ball-connector" style="left: ' + leftExpr + '; top: ' + ballTopPx + 'px; height: ' + ballOffsetPx + 'px;"></div>';
+    html += '    <div class="ball-marker" style="left: ' + leftExpr + '; top: ' + ballTopPx + 'px;"></div>';
     html += '    <div class="stance-rail"></div>';
     html += '    <div class="stance-center-tick"></div>';
     html += '    <div class="stance-center-label">center</div>';
@@ -1141,10 +1146,6 @@
     html += '    <div class="foot trail"></div>';
     html += '    <div class="foot-label lead">Lead</div>';
     html += '    <div class="foot-label trail">Trail</div>';
-    html += '    <div class="ball-line" style="top: calc(50% + ' + ballOffsetPx + 'px);"></div>';
-    html += '    <div class="ball-connector" style="left: ' + leftExpr + '; height: ' + ballOffsetPx + 'px;"></div>';
-    html += '    <div class="ball-marker" style="left: ' + leftExpr + '; top: calc(50% + ' + ballOffsetPx + 'px);"></div>';
-    html += '    <div class="away-label">away from you<br>&#8595;</div>';
     html += '  </div>';
     html += '  <div class="stance-info">';
     html += '    <div class="cat-name">' + escapeHtml(category.key) + '</div>';
