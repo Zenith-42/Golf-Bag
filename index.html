@@ -143,8 +143,12 @@
   }
 
   /* Finder */
-  .yardage-input-wrap {
-    margin-bottom: 16px;
+  .yardage-slider-wrap {
+    margin-bottom: 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px 18px;
   }
 
   label.field-label {
@@ -174,13 +178,77 @@
     border-color: var(--turf-light);
   }
 
-  .yardage-input-wrap input {
-    font-size: 1.8rem;
-    font-family: 'Oswald', sans-serif;
-    font-weight: 600;
+  .yardage-readout {
     text-align: center;
-    padding: 16px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 2.6rem;
     color: var(--turf-dark);
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+
+  .yardage-readout span {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+
+  input[type="range"]#yardage-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 32px;
+    background: transparent;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  input[type="range"]#yardage-input:focus {
+    outline: none;
+  }
+
+  input[type="range"]#yardage-input::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--turf-mid), var(--turf-light));
+  }
+
+  input[type="range"]#yardage-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff, var(--ball) 60%, #ddd6c2 100%);
+    border: 3px solid var(--terracotta);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    margin-top: -11px;
+  }
+
+  input[type="range"]#yardage-input::-moz-range-track {
+    height: 8px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--turf-mid), var(--turf-light));
+  }
+
+  input[type="range"]#yardage-input::-moz-range-thumb {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff, var(--ball) 60%, #ddd6c2 100%);
+    border: 3px solid var(--terracotta);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  .slider-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+    padding: 0 2px;
   }
 
   .rec-card {
@@ -868,9 +936,11 @@
   <main>
     <!-- FINDER -->
     <section class="panel active" id="panel-finder">
-      <div class="yardage-input-wrap">
-        <label class="field-label" for="yardage-input">Yardage to target</label>
-        <input type="number" id="yardage-input" inputmode="numeric" placeholder="e.g. 145" min="0">
+      <div class="yardage-slider-wrap">
+        <label class="field-label">Yardage to target</label>
+        <div class="yardage-readout" id="yardage-readout">150<span>yds</span></div>
+        <input type="range" id="yardage-input" min="30" max="300" step="1" value="150">
+        <div class="slider-scale"><span>30</span><span>300</span></div>
       </div>
       <div id="finder-output"></div>
     </section>
@@ -1046,10 +1116,12 @@
 
   // ---------- Finder ----------
   var yardageInput = document.getElementById('yardage-input');
+  var yardageReadout = document.getElementById('yardage-readout');
   var finderOutput = document.getElementById('finder-output');
   var finderPreviewCategory = null; // category key currently previewed from "closest clubs" list
 
   yardageInput.addEventListener('input', function () {
+    yardageReadout.innerHTML = yardageInput.value + '<span>yds</span>';
     finderPreviewCategory = null;
     renderFinder();
   });
