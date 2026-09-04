@@ -1072,6 +1072,58 @@
     color: #fff;
   }
 
+  .recent-gps-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #eef2ec;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    margin-bottom: 6px;
+  }
+
+  .recent-gps-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .recent-gps-row.flash {
+    animation: recentGpsFlash 1.4s ease;
+  }
+
+  @keyframes recentGpsFlash {
+    0% { background: #b7e4c4; border-color: var(--turf-mid); }
+    100% { background: #eef2ec; border-color: var(--border); }
+  }
+
+  .recent-gps-club {
+    font-weight: 600;
+    color: var(--turf-dark);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .recent-gps-yards {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .recent-gps-time {
+    flex: 1;
+    text-align: right;
+    font-size: 0.76rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .recent-gps-time.low-accuracy {
+    color: #a06a1f;
+  }
+
   footer.appfoot {
     text-align: center;
     font-size: 0.72rem;
@@ -1115,6 +1167,12 @@
         <input type="range" id="yardage-input" min="50" max="200" step="1" value="150">
         <div class="slider-scale"><span>50</span><span>200</span></div>
       </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px;font-size:0.95rem;">Recently tracked</h3>
+        <div id="recent-gps-shots"></div>
+      </div>
+
       <div id="finder-output"></div>
     </section>
 
@@ -1252,7 +1310,7 @@
       btn.classList.add('active');
       Object.keys(panels).forEach(function (k) { panels[k].classList.remove('active'); });
       panels[btn.dataset.tab].classList.add('active');
-      if (btn.dataset.tab === 'finder') { renderFinder(); renderGpsCard(); }
+      if (btn.dataset.tab === 'finder') { renderFinder(); renderGpsCard(); renderRecentGpsShots(); }
       if (btn.dataset.tab === 'bag') refreshBagPanel();
       if (btn.dataset.tab === 'stance') renderStanceTab();
     });
@@ -1489,6 +1547,7 @@
     renderBag();
     renderQuickLog();
     renderGpsCard();
+    renderRecentGpsShots();
   }
 
   function renderQuickLog() {
@@ -1631,6 +1690,8 @@
   // secure, but some (notably some Android Chrome builds) do not — in that case the API may
   // be entirely missing or every call fails immediately, no matter what site permission says.
   var GPS_INSECURE_CONTEXT = typeof window.isSecureContext === 'boolean' && !window.isSecureContext;
+  var recentGpsShotsEl = document.getElementById('recent-gps-shots');
+  var recentGpsFlashId = null; // id of the just-logged shot, briefly highlighted
 
   function haversineYards(lat1, lon1, lat2, lon2) {
     var R_M = 6371000; // mean Earth radius, meters
@@ -1791,14 +1852,16 @@
       var worstAccuracy = Math.max(gpsState.accuracy, pos.coords.accuracy);
 
       if (!Array.isArray(club.gpsShots)) club.gpsShots = [];
-      club.gpsShots.push({
+      var newShot = {
         id: uid(),
         yards: yards,
         ts: Date.now(),
         accuracy: Math.round(worstAccuracy)
-      });
+      };
+      club.gpsShots.push(newShot);
       saveClubs();
       gpsState = null;
+      recentGpsFlashId = newShot.id;
       refreshBagPanel();
 
       var msg = 'Shot recorded: ' + yards + ' yds for ' + club.name + '.';
@@ -1825,6 +1888,47 @@
     var d = new Date(ts);
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' +
       d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function formatRelativeTime(ts) {
+    var diffMin = Math.round((Date.now() - ts) / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return diffMin + ' min ago';
+    var diffHr = Math.round(diffMin / 60);
+    if (diffHr < 24) return diffHr + ' hr ago';
+    return formatShotTime(ts);
+  }
+
+  var RECENT_GPS_SHOT_LIMIT = 5;
+
+  function renderRecentGpsShots() {
+    var allShots = [];
+    clubs.forEach(function (club) {
+      (club.gpsShots || []).forEach(function (s) {
+        allShots.push({ id: s.id, clubName: club.name, yards: s.yards, ts: s.ts, accuracy: s.accuracy });
+      });
+    });
+    allShots.sort(function (a, b) { return b.ts - a.ts; });
+    var recent = allShots.slice(0, RECENT_GPS_SHOT_LIMIT);
+
+    if (!recent.length) {
+      recentGpsShotsEl.innerHTML = '<div class="hint" style="padding:6px 4px;">No GPS shots tracked yet — mark a shot above and it\'ll show up here.</div>';
+      recentGpsFlashId = null;
+      return;
+    }
+
+    var html = '';
+    recent.forEach(function (s) {
+      var lowAcc = typeof s.accuracy === 'number' && s.accuracy > GPS_ACCURACY_WARN_M;
+      var flash = s.id === recentGpsFlashId;
+      html += '<div class="recent-gps-row' + (flash ? ' flash' : '') + '">';
+      html += '  <span class="recent-gps-club">' + escapeHtml(s.clubName) + '</span>';
+      html += '  <span class="recent-gps-yards">' + s.yards + ' yds</span>';
+      html += '  <span class="recent-gps-time' + (lowAcc ? ' low-accuracy' : '') + '">' + formatRelativeTime(s.ts) + (lowAcc ? ' ⚠' : '') + '</span>';
+      html += '</div>';
+    });
+    recentGpsShotsEl.innerHTML = html;
+    recentGpsFlashId = null;
   }
 
   // ---------- Backup & restore ----------
@@ -2122,6 +2226,7 @@
   // ---------- Init ----------
   renderFinder();
   renderGpsCard();
+  renderRecentGpsShots();
   renderStanceTab();
 })();
 </script>
