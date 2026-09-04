@@ -1709,7 +1709,24 @@
       } else {
         setGpsStatus('Select a club, then tap Mark tee/shot position.', 'info');
       }
+      checkGpsPermissionState();
     }
+  }
+
+  // Ask the browser directly what it currently has stored for this page's location
+  // permission, instead of waiting for a getCurrentPosition() call to fail. Not all
+  // browsers support this (notably older Safari), so it degrades silently if absent.
+  function checkGpsPermissionState() {
+    if (!navigator.permissions || !navigator.permissions.query) return;
+    navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
+      if (gpsState) return; // a shot started while this was resolving — don't stomp its status
+      if (result.state === 'denied') {
+        setGpsStatus('Chrome currently has location BLOCKED for this exact page (confirmed via the browser’s own permission API — this isn’t a guess). Fix: Chrome menu (⋮) → Settings → Site settings → Location → find this page under "Not allowed" and remove it or set to Allow — then reload this page.', 'error');
+      } else if (result.state === 'granted') {
+        setGpsStatus('Location is allowed for this page. Select a club, then tap Mark tee/shot position.', 'info');
+      }
+      result.onchange = function () { renderGpsCard(); };
+    }).catch(function () {});
   }
 
   gpsStartBtn.addEventListener('click', function () {
