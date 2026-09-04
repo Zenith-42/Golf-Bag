@@ -1627,6 +1627,10 @@
   var GPS_ACCURACY_WARN_M = 15;
   var gpsState = null; // { clubId, lat, lng, accuracy, ts } once a shot position has been marked
   var gpsBusy = false; // true while a getCurrentPosition() call is in flight
+  // Geolocation is only exposed in a secure context. Most browsers treat file:// pages as
+  // secure, but some (notably some Android Chrome builds) do not — in that case the API may
+  // be entirely missing or every call fails immediately, no matter what site permission says.
+  var GPS_INSECURE_CONTEXT = typeof window.isSecureContext === 'boolean' && !window.isSecureContext;
 
   function haversineYards(lat1, lon1, lat2, lon2) {
     var R_M = 6371000; // mean Earth radius, meters
@@ -1687,12 +1691,19 @@
     }
 
     var inShot = !!gpsState;
-    gpsClubSelect.disabled = !hasClubs || inShot;
-    gpsStartBtn.disabled = !hasClubs || inShot || gpsBusy;
-    gpsEndBtn.disabled = !inShot || gpsBusy;
+    var blocked = GPS_INSECURE_CONTEXT || !navigator.geolocation;
+    gpsClubSelect.disabled = !hasClubs || inShot || blocked;
+    gpsStartBtn.disabled = !hasClubs || inShot || gpsBusy || blocked;
+    gpsEndBtn.disabled = !inShot || gpsBusy || blocked;
     gpsCancelBtn.style.display = inShot ? 'block' : 'none';
 
-    if (!gpsState) {
+    if (blocked) {
+      if (GPS_INSECURE_CONTEXT) {
+        setGpsStatus("This page isn't loaded securely, so your browser is blocking location access entirely — no permission setting will fix this. Host this file over HTTPS (for example, GitHub Pages) instead of opening it as a local file, and GPS tracking will work normally.", 'error');
+      } else {
+        setGpsStatus('This browser does not support location access, so GPS shot tracking is unavailable.', 'error');
+      }
+    } else if (!gpsState) {
       if (!hasClubs) {
         setGpsStatus('Add a club below, then come back here to track a shot by GPS.', 'info');
       } else {
@@ -1702,8 +1713,8 @@
   }
 
   gpsStartBtn.addEventListener('click', function () {
-    if (!navigator.geolocation) {
-      setGpsStatus('This browser does not support location access, so GPS shot tracking is unavailable.', 'error');
+    if (GPS_INSECURE_CONTEXT || !navigator.geolocation) {
+      renderGpsCard();
       return;
     }
     var clubId = gpsClubSelect.value;
