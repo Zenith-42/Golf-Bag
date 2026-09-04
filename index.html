@@ -1087,13 +1087,23 @@
     margin-bottom: 0;
   }
 
+  .recent-gps-row.in-range {
+    background: #dbf0e0;
+    border-color: #a9dcb6;
+  }
+
+  .recent-gps-row.out-of-range {
+    background: #fbe1da;
+    border-color: #f0b6a2;
+  }
+
   .recent-gps-row.flash {
     animation: recentGpsFlash 1.4s ease;
   }
 
   @keyframes recentGpsFlash {
-    0% { background: #b7e4c4; border-color: var(--turf-mid); }
-    100% { background: #eef2ec; border-color: var(--border); }
+    0% { box-shadow: 0 0 0 3px rgba(20, 92, 52, 0.35); }
+    100% { box-shadow: 0 0 0 0 rgba(20, 92, 52, 0); }
   }
 
   .recent-gps-club {
@@ -1905,7 +1915,8 @@
     var allShots = [];
     clubs.forEach(function (club) {
       (club.gpsShots || []).forEach(function (s) {
-        allShots.push({ id: s.id, clubName: club.name, yards: s.yards, ts: s.ts, accuracy: s.accuracy });
+        var inRange = s.yards >= club.minYardage && s.yards <= club.maxYardage;
+        allShots.push({ id: s.id, clubName: club.name, yards: s.yards, ts: s.ts, accuracy: s.accuracy, inRange: inRange });
       });
     });
     allShots.sort(function (a, b) { return b.ts - a.ts; });
@@ -1921,7 +1932,8 @@
     recent.forEach(function (s) {
       var lowAcc = typeof s.accuracy === 'number' && s.accuracy > GPS_ACCURACY_WARN_M;
       var flash = s.id === recentGpsFlashId;
-      html += '<div class="recent-gps-row' + (flash ? ' flash' : '') + '">';
+      var rangeClass = s.inRange ? ' in-range' : ' out-of-range';
+      html += '<div class="recent-gps-row' + rangeClass + (flash ? ' flash' : '') + '">';
       html += '  <span class="recent-gps-club">' + escapeHtml(s.clubName) + '</span>';
       html += '  <span class="recent-gps-yards">' + s.yards + ' yds</span>';
       html += '  <span class="recent-gps-time' + (lowAcc ? ' low-accuracy' : '') + '">' + formatRelativeTime(s.ts) + (lowAcc ? ' ⚠' : '') + '</span>';
