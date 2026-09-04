@@ -1096,6 +1096,19 @@
   <main>
     <!-- FINDER -->
     <section class="panel active" id="panel-finder">
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:0.95rem;">GPS shot tracker</h3>
+        <p class="backup-hint">Pick a club, mark your shot position, walk to the ball, then mark it — distance is measured automatically. Needs location access.</p>
+        <label class="field-label" for="gps-club-select">Club</label>
+        <select id="gps-club-select"></select>
+        <div class="gps-status" id="gps-status">Select a club, then tap Mark tee/shot position.</div>
+        <div class="gps-actions">
+          <button type="button" class="add-btn" id="gps-start-btn">Mark tee/shot position</button>
+          <button type="button" class="add-btn gps-end-btn" id="gps-end-btn" disabled>Mark ball position</button>
+        </div>
+        <button type="button" class="gps-cancel-btn" id="gps-cancel-btn" style="display:none;">Cancel this shot</button>
+      </div>
+
       <div class="yardage-slider-wrap">
         <label class="field-label">Yardage to target</label>
         <div class="yardage-readout" id="yardage-readout">150<span>yds</span></div>
@@ -1111,19 +1124,6 @@
         <h3 style="margin:0 0 4px;font-size:0.95rem;">Quick log a shot</h3>
         <p class="backup-hint">Tap a club, type the distance, hit Log.</p>
         <div id="quick-log-list"></div>
-      </div>
-
-      <div class="card">
-        <h3 style="margin:0 0 4px;font-size:0.95rem;">GPS shot tracker</h3>
-        <p class="backup-hint">Pick a club, mark your shot position, walk to the ball, then mark it — distance is measured automatically. Needs location access.</p>
-        <label class="field-label" for="gps-club-select">Club</label>
-        <select id="gps-club-select"></select>
-        <div class="gps-status" id="gps-status">Select a club, then tap Mark tee/shot position.</div>
-        <div class="gps-actions">
-          <button type="button" class="add-btn" id="gps-start-btn">Mark tee/shot position</button>
-          <button type="button" class="add-btn gps-end-btn" id="gps-end-btn" disabled>Mark ball position</button>
-        </div>
-        <button type="button" class="gps-cancel-btn" id="gps-cancel-btn" style="display:none;">Cancel this shot</button>
       </div>
 
       <div class="card">
@@ -1252,7 +1252,7 @@
       btn.classList.add('active');
       Object.keys(panels).forEach(function (k) { panels[k].classList.remove('active'); });
       panels[btn.dataset.tab].classList.add('active');
-      if (btn.dataset.tab === 'finder') renderFinder();
+      if (btn.dataset.tab === 'finder') { renderFinder(); renderGpsCard(); }
       if (btn.dataset.tab === 'bag') refreshBagPanel();
       if (btn.dataset.tab === 'stance') renderStanceTab();
     });
@@ -1641,8 +1641,24 @@
     return meters * 1.0936133; // meters -> yards
   }
 
+  function detectPlatform() {
+    var ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
+    if (/Android/.test(ua)) return 'android';
+    return 'other';
+  }
+
   function geoErrorMessage(err) {
-    if (err.code === 1) return 'Location permission denied. Enable location access for this site in your browser/device settings to use GPS shot tracking.';
+    if (err.code === 1) {
+      var platform = detectPlatform();
+      if (platform === 'ios') {
+        return 'Location permission denied. On iPhone/iPad: Settings app → Privacy & Security → Location Services → Safari Websites → set to "Ask Next Time" (or "While Using the App"), then reopen this page and try again.';
+      }
+      if (platform === 'android') {
+        return 'Location permission denied. Tap the site info icon next to the address bar and allow Location — or Chrome menu → Settings → Site settings → Location and un-block this page — then reload and try again.';
+      }
+      return "Location permission denied. Check this page's site settings in your browser (usually via the icon next to the address bar) and allow Location, then reload and try again.";
+    }
     if (err.code === 2) return "Couldn't get a location fix. Try again in an open area away from buildings or trees.";
     if (err.code === 3) return 'Location request timed out. Try again.';
     return 'Location error: ' + (err && err.message ? err.message : 'unknown error') + '.';
@@ -2077,6 +2093,7 @@
 
   // ---------- Init ----------
   renderFinder();
+  renderGpsCard();
   renderStanceTab();
 })();
 </script>
