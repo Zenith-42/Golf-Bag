@@ -1323,6 +1323,14 @@
     return sum / arr.length;
   }
 
+  // Manually-logged distances plus GPS-tracked shot yardages, combined — this is
+  // "everything we actually know about how far this club goes," used anywhere the
+  // app shows or reasons about a club's real average distance.
+  function allDistances(club) {
+    var gpsYards = (club.gpsShots || []).map(function (s) { return s.yards; });
+    return club.distances.concat(gpsYards);
+  }
+
   // NOTE on direction semantics (used in UI copy):
   // - yardage < club.minYardage  => the target is SHORTER than this club's range -> this club goes TOO LONG (club "long" for the shot)
   // - yardage > club.maxYardage  => the target is FARTHER than this club's range -> this club falls SHORT (club "short" for the shot)
@@ -1334,7 +1342,7 @@
     var rangeGap = inRange ? 0 : (yardage > club.maxYardage ? yardage - club.maxYardage : club.minYardage - yardage);
     var direction = inRange ? null : (yardage > club.maxYardage ? 'short' : 'long');
 
-    var avgDistance = avg(club.distances);
+    var avgDistance = avg(allDistances(club));
     var avgGap = avgDistance !== null ? Math.abs(yardage - avgDistance) : null;
 
     // Rank using whichever signal is a closer fit: the club's stated range, or its
@@ -1415,8 +1423,9 @@
     html += '  <div class="rec-name">' + escapeHtml(best.club.name) + '</div>';
     html += '  <div class="rec-range">' + best.club.minYardage + ' – ' + best.club.maxYardage + ' yds &middot; ' + escapeHtml(best.club.category) + '</div>';
     html += '  <span class="rec-tag ' + (best.info.inRange ? 'inrange' : 'off') + '">' + tagLabel(best.info) + '</span>';
-    if (best.club.distances.length) {
-      html += '  <div class="rec-avg">' + avgNoteLabel(best.info) + ' &middot; ' + best.club.distances.length + ' shot' + (best.club.distances.length === 1 ? '' : 's') + ' logged</div>';
+    var bestShotCount = allDistances(best.club).length;
+    if (bestShotCount) {
+      html += '  <div class="rec-avg">' + avgNoteLabel(best.info) + ' &middot; ' + bestShotCount + ' shot' + (bestShotCount === 1 ? '' : 's') + ' logged</div>';
     }
     html += '</div>';
 
@@ -1493,7 +1502,8 @@
     var html = '';
     sorted.forEach(function (club) {
       var expanded = club.id === quickLogExpandedId;
-      var a = avg(club.distances);
+      var clubShots = allDistances(club);
+      var a = avg(clubShots);
       html += '<div class="quick-log-row' + (expanded ? ' expanded' : '') + (club.id === quickLogFlashId ? ' flash' : '') + '" data-id="' + club.id + '">';
       html += '  <div class="qlr-header" data-action="toggle-quick-log">';
       html += '    <div class="qlr-main">';
@@ -1501,7 +1511,7 @@
       html += '      <span class="qlr-range">' + club.minYardage + '&ndash;' + club.maxYardage + ' yds</span>';
       html += '    </div>';
       if (a !== null) {
-        html += '    <div class="qlr-avg">avg ' + Math.round(a) + ' &middot; ' + club.distances.length + '</div>';
+        html += '    <div class="qlr-avg">avg ' + Math.round(a) + ' &middot; ' + clubShots.length + '</div>';
       } else {
         html += '    <div class="qlr-avg qlr-empty">no shots yet</div>';
       }
@@ -1877,7 +1887,8 @@
 
     var html = '';
     sorted.forEach(function (club) {
-      var a = avg(club.distances);
+      var clubShots = allDistances(club);
+      var a = avg(clubShots);
       html += '<div class="club-card" data-id="' + club.id + '">';
       html += '  <div class="club-card-head">';
       html += '    <div>';
@@ -1913,7 +1924,7 @@
       html += '  <div class="club-stats">';
       html += '    <span>Range: <strong>' + club.minYardage + '&ndash;' + club.maxYardage + ' yds</strong></span>';
       if (a !== null) {
-        html += '    <span>Avg: <strong>' + Math.round(a) + ' yds</strong> (' + club.distances.length + ')</span>';
+        html += '    <span>Avg: <strong>' + Math.round(a) + ' yds</strong> (' + clubShots.length + ')</span>';
       } else {
         html += '    <span>No shots logged</span>';
       }
