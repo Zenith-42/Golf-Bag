@@ -942,6 +942,136 @@
     color: var(--turf-mid);
   }
 
+  .gps-status {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 10px 0;
+    color: var(--muted);
+  }
+
+  .gps-status.warn {
+    color: #a06a1f;
+  }
+
+  .gps-status.error {
+    color: var(--terracotta);
+  }
+
+  .gps-status.success {
+    color: var(--turf-mid);
+  }
+
+  .gps-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .gps-actions button {
+    flex: 1;
+    margin-top: 0;
+  }
+
+  .gps-actions .gps-end-btn {
+    background: var(--terracotta);
+  }
+
+  .gps-actions button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .gps-cancel-btn {
+    display: block;
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 9px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  .gps-cancel-btn:active {
+    background: #f4e2dc;
+    border-color: var(--terracotta);
+    color: var(--terracotta);
+  }
+
+  .gps-shots-block {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .gps-stats-line {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .gps-stats-line strong {
+    color: var(--ink);
+  }
+
+  .gps-shot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .gps-shot-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #eef2ec;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 7px 8px 7px 12px;
+  }
+
+  .gps-shot-yards {
+    font-weight: 600;
+    color: var(--turf-dark);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .gps-shot-meta {
+    flex: 1;
+    font-size: 0.74rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gps-shot-meta .low-accuracy {
+    color: #a06a1f;
+  }
+
+  .gps-shot-delete {
+    background: rgba(0,0,0,0.06);
+    border: none;
+    color: var(--muted);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+
+  .gps-shot-delete:active {
+    background: var(--terracotta);
+    color: #fff;
+  }
+
   footer.appfoot {
     text-align: center;
     font-size: 0.72rem;
@@ -981,6 +1111,19 @@
         <h3 style="margin:0 0 4px;font-size:0.95rem;">Quick log a shot</h3>
         <p class="backup-hint">Tap a club, type the distance, hit Log.</p>
         <div id="quick-log-list"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 4px;font-size:0.95rem;">GPS shot tracker</h3>
+        <p class="backup-hint">Pick a club, mark your shot position, walk to the ball, then mark it — distance is measured automatically. Needs location access.</p>
+        <label class="field-label" for="gps-club-select">Club</label>
+        <select id="gps-club-select"></select>
+        <div class="gps-status" id="gps-status">Select a club, then tap Mark tee/shot position.</div>
+        <div class="gps-actions">
+          <button type="button" class="add-btn" id="gps-start-btn">Mark tee/shot position</button>
+          <button type="button" class="add-btn gps-end-btn" id="gps-end-btn" disabled>Mark ball position</button>
+        </div>
+        <button type="button" class="gps-cancel-btn" id="gps-cancel-btn" style="display:none;">Cancel this shot</button>
       </div>
 
       <div class="card">
@@ -1336,6 +1479,7 @@
   function refreshBagPanel() {
     renderBag();
     renderQuickLog();
+    renderGpsCard();
   }
 
   function renderQuickLog() {
@@ -1443,7 +1587,8 @@
       category: category,
       minYardage: minV,
       maxYardage: maxV,
-      distances: []
+      distances: [],
+      gpsShots: []
     });
     saveClubs();
 
@@ -1461,6 +1606,171 @@
   function hideAddError() {
     addError.classList.remove('show');
     addError.textContent = '';
+  }
+
+  // ---------- GPS shot tracker ----------
+  var gpsClubSelect = document.getElementById('gps-club-select');
+  var gpsStatusEl = document.getElementById('gps-status');
+  var gpsStartBtn = document.getElementById('gps-start-btn');
+  var gpsEndBtn = document.getElementById('gps-end-btn');
+  var gpsCancelBtn = document.getElementById('gps-cancel-btn');
+  var GPS_ACCURACY_WARN_M = 15;
+  var gpsState = null; // { clubId, lat, lng, accuracy, ts } once a shot position has been marked
+  var gpsBusy = false; // true while a getCurrentPosition() call is in flight
+
+  function haversineYards(lat1, lon1, lat2, lon2) {
+    var R_M = 6371000; // mean Earth radius, meters
+    var toRad = function (d) { return d * Math.PI / 180; };
+    var dLat = toRad(lat2 - lat1);
+    var dLon = toRad(lon2 - lon1);
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var meters = R_M * c;
+    return meters * 1.0936133; // meters -> yards
+  }
+
+  function geoErrorMessage(err) {
+    if (err.code === 1) return 'Location permission denied. Enable location access for this site in your browser/device settings to use GPS shot tracking.';
+    if (err.code === 2) return "Couldn't get a location fix. Try again in an open area away from buildings or trees.";
+    if (err.code === 3) return 'Location request timed out. Try again.';
+    return 'Location error: ' + (err && err.message ? err.message : 'unknown error') + '.';
+  }
+
+  function setGpsStatus(msg, kind) {
+    gpsStatusEl.textContent = msg;
+    gpsStatusEl.className = 'gps-status' + (kind ? ' ' + kind : '');
+  }
+
+  function renderGpsCard() {
+    var prevValue = gpsClubSelect.value;
+    var hasClubs = clubs.length > 0;
+
+    if (!hasClubs) {
+      gpsClubSelect.innerHTML = '<option value="">Add a club first</option>';
+    } else {
+      var sorted = clubs.slice().sort(function (a, b) { return b.maxYardage - a.maxYardage; });
+      var html = '';
+      sorted.forEach(function (c) {
+        html += '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>';
+      });
+      gpsClubSelect.innerHTML = html;
+      var wantValue = gpsState ? gpsState.clubId : prevValue;
+      if (wantValue && findClub(wantValue)) gpsClubSelect.value = wantValue;
+    }
+
+    var inShot = !!gpsState;
+    gpsClubSelect.disabled = !hasClubs || inShot;
+    gpsStartBtn.disabled = !hasClubs || inShot || gpsBusy;
+    gpsEndBtn.disabled = !inShot || gpsBusy;
+    gpsCancelBtn.style.display = inShot ? 'block' : 'none';
+
+    if (!gpsState) {
+      if (!hasClubs) {
+        setGpsStatus('Add a club below, then come back here to track a shot by GPS.', 'info');
+      } else {
+        setGpsStatus('Select a club, then tap Mark tee/shot position.', 'info');
+      }
+    }
+  }
+
+  gpsStartBtn.addEventListener('click', function () {
+    if (!navigator.geolocation) {
+      setGpsStatus('This browser does not support location access, so GPS shot tracking is unavailable.', 'error');
+      return;
+    }
+    var clubId = gpsClubSelect.value;
+    var club = findClub(clubId);
+    if (!club) return;
+
+    gpsBusy = true;
+    renderGpsCard();
+    setGpsStatus('Getting your location…', 'info');
+
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      gpsBusy = false;
+      gpsState = {
+        clubId: clubId,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        ts: Date.now()
+      };
+      renderGpsCard();
+
+      var msg = 'Shot position marked for ' + club.name + ' (±' + Math.round(pos.coords.accuracy) + 'm). Walk to your ball, then tap Mark ball position.';
+      if (pos.coords.accuracy > GPS_ACCURACY_WARN_M) {
+        setGpsStatus(msg + ' ⚠ GPS accuracy is low right now.', 'warn');
+      } else {
+        setGpsStatus(msg, 'info');
+      }
+    }, function (err) {
+      gpsBusy = false;
+      renderGpsCard();
+      setGpsStatus(geoErrorMessage(err), 'error');
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  });
+
+  gpsEndBtn.addEventListener('click', function () {
+    if (!gpsState) return;
+    if (!navigator.geolocation) {
+      setGpsStatus('This browser does not support location access, so GPS shot tracking is unavailable.', 'error');
+      return;
+    }
+
+    gpsBusy = true;
+    renderGpsCard();
+    setGpsStatus('Getting your ball’s location…', 'info');
+
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      gpsBusy = false;
+      var club = findClub(gpsState.clubId);
+      if (!club) {
+        gpsState = null;
+        renderGpsCard();
+        setGpsStatus('That club no longer exists in your bag. Shot discarded.', 'error');
+        return;
+      }
+
+      var yards = Math.round(haversineYards(gpsState.lat, gpsState.lng, pos.coords.latitude, pos.coords.longitude) * 10) / 10;
+      var worstAccuracy = Math.max(gpsState.accuracy, pos.coords.accuracy);
+
+      if (!Array.isArray(club.gpsShots)) club.gpsShots = [];
+      club.gpsShots.push({
+        id: uid(),
+        yards: yards,
+        ts: Date.now(),
+        accuracy: Math.round(worstAccuracy)
+      });
+      saveClubs();
+      gpsState = null;
+      refreshBagPanel();
+
+      var msg = 'Shot recorded: ' + yards + ' yds for ' + club.name + '.';
+      if (worstAccuracy > GPS_ACCURACY_WARN_M) {
+        setGpsStatus(msg + ' ⚠ GPS accuracy was low (±' + Math.round(worstAccuracy) + 'm) — distance may be less precise.', 'warn');
+      } else {
+        setGpsStatus(msg, 'success');
+      }
+    }, function (err) {
+      gpsBusy = false;
+      renderGpsCard();
+      setGpsStatus(geoErrorMessage(err) + ' Your shot position is still marked — try Mark ball position again.', 'error');
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  });
+
+  gpsCancelBtn.addEventListener('click', function () {
+    gpsState = null;
+    gpsBusy = false;
+    renderGpsCard();
+    setGpsStatus('Shot canceled. Select a club, then tap Mark tee/shot position.', 'info');
+  });
+
+  function formatShotTime(ts) {
+    var d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   }
 
   // ---------- Backup & restore ----------
@@ -1536,7 +1846,17 @@
         category: item.category,
         minYardage: item.minYardage,
         maxYardage: item.maxYardage,
-        distances: Array.isArray(item.distances) ? item.distances.filter(function (d) { return typeof d === 'number'; }) : []
+        distances: Array.isArray(item.distances) ? item.distances.filter(function (d) { return typeof d === 'number'; }) : [],
+        gpsShots: Array.isArray(item.gpsShots) ? item.gpsShots.filter(function (s) {
+          return s && typeof s.yards === 'number';
+        }).map(function (s) {
+          return {
+            id: typeof s.id === 'string' ? s.id : uid(),
+            yards: s.yards,
+            ts: typeof s.ts === 'number' ? s.ts : Date.now(),
+            accuracy: typeof s.accuracy === 'number' ? s.accuracy : null
+          };
+        }) : []
       });
     }
     return cleaned;
@@ -1598,6 +1918,30 @@
         html += '    <span>No shots logged</span>';
       }
       html += '  </div>';
+
+      var gpsShots = club.gpsShots || [];
+      if (gpsShots.length) {
+        var gpsYards = gpsShots.map(function (s) { return s.yards; });
+        var gpsAvg = avg(gpsYards);
+        var gpsMin = Math.min.apply(null, gpsYards);
+        var gpsMax = Math.max.apply(null, gpsYards);
+        var gpsSorted = gpsShots.slice().sort(function (a2, b2) { return b2.ts - a2.ts; });
+
+        html += '  <div class="gps-shots-block">';
+        html += '    <div class="distances-label">GPS shots</div>';
+        html += '    <div class="gps-stats-line">Avg <strong>' + Math.round(gpsAvg) + ' yds</strong> &middot; min ' + Math.round(gpsMin) + ' &middot; max ' + Math.round(gpsMax) + ' &middot; ' + gpsShots.length + ' shot' + (gpsShots.length === 1 ? '' : 's') + '</div>';
+        html += '    <div class="gps-shot-list">';
+        gpsSorted.forEach(function (s) {
+          var lowAccuracy = typeof s.accuracy === 'number' && s.accuracy > GPS_ACCURACY_WARN_M;
+          html += '<div class="gps-shot-row">';
+          html += '  <span class="gps-shot-yards">' + s.yards + ' yds</span>';
+          html += '  <span class="gps-shot-meta">' + formatShotTime(s.ts) + (typeof s.accuracy === 'number' ? ' &middot; <span class="' + (lowAccuracy ? 'low-accuracy' : '') + '">&plusmn;' + s.accuracy + 'm' + (lowAccuracy ? ' ⚠' : '') + '</span>' : '') + '</span>';
+          html += '  <button type="button" class="gps-shot-delete" data-action="remove-gps-shot" data-shot-id="' + s.id + '">&times;</button>';
+          html += '</div>';
+        });
+        html += '    </div>';
+        html += '  </div>';
+      }
 
       html += '</div>';
     });
@@ -1677,6 +2021,15 @@
         btn.addEventListener('click', function () {
           var idx = parseInt(btn.dataset.idx, 10);
           club.distances.splice(idx, 1);
+          saveClubs();
+          refreshBagPanel();
+        });
+      });
+
+      cardEl.querySelectorAll('[data-action="remove-gps-shot"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var shotId = btn.dataset.shotId;
+          club.gpsShots = (club.gpsShots || []).filter(function (s) { return s.id !== shotId; });
           saveClubs();
           refreshBagPanel();
         });
