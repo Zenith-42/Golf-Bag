@@ -57,56 +57,51 @@
     box-shadow: 0 0 30px rgba(0,0,0,0.06);
   }
 
-  header.top {
-    background: linear-gradient(135deg, var(--turf-dark), var(--turf-mid));
-    color: var(--ball);
-    padding: 20px 20px 16px;
-    text-align: center;
-  }
-
-  header.top h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-  }
-
-  header.top .tagline {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.78rem;
-    color: #cfe6d7;
-    text-transform: none;
-    letter-spacing: 0.01em;
-    margin-top: 2px;
-  }
-
   nav.tabs {
     display: flex;
     background: var(--turf-dark);
-    position: sticky;
-    top: 0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.18);
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
     z-index: 10;
   }
 
   nav.tabs button {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
     background: none;
     border: none;
+    border-top: 3px solid transparent;
     color: #a9c9b4;
+    cursor: pointer;
+    padding: 9px 4px calc(9px + env(safe-area-inset-bottom));
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  nav.tabs .tab-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  nav.tabs .tab-label {
     font-family: 'Oswald', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.64rem;
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    padding: 14px 6px;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: color 0.15s ease, border-color 0.15s ease;
   }
 
   nav.tabs button.active {
     color: var(--ball);
-    border-bottom-color: var(--terracotta);
+    border-top-color: var(--terracotta);
   }
 
   nav.tabs button:active {
@@ -115,7 +110,7 @@
 
   main {
     flex: 1;
-    padding: 18px 16px 40px;
+    padding: 18px 16px 24px;
   }
 
   .panel {
@@ -1000,22 +995,17 @@
     text-align: center;
     font-size: 0.72rem;
     color: var(--muted);
-    padding: 10px 20px 26px;
+    padding: 10px 20px calc(80px + env(safe-area-inset-bottom));
   }
 </style>
 </head>
 <body>
 <div id="app">
-  <header class="top">
-    <h1>⛳ Club Caddie</h1>
-    <div class="tagline">Your bag. Your yardages. Your stance.</div>
-  </header>
-
   <nav class="tabs">
-    <button type="button" class="tab-btn active" data-tab="finder">Finder</button>
-    <button type="button" class="tab-btn" data-tab="bag">My Bag</button>
-    <button type="button" class="tab-btn" data-tab="trends">Trends</button>
-    <button type="button" class="tab-btn" data-tab="stance">Stance</button>
+    <button type="button" class="tab-btn active" data-tab="finder"><span class="tab-icon">🎯</span><span class="tab-label">Finder</span></button>
+    <button type="button" class="tab-btn" data-tab="bag"><span class="tab-icon">🎒</span><span class="tab-label">My Bag</span></button>
+    <button type="button" class="tab-btn" data-tab="trends"><span class="tab-icon">📈</span><span class="tab-label">Trends</span></button>
+    <button type="button" class="tab-btn" data-tab="stance"><span class="tab-icon">🧍</span><span class="tab-label">Stance</span></button>
   </nav>
 
   <main>
