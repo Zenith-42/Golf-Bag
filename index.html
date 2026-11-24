@@ -1248,35 +1248,25 @@
     return sum / arr.length;
   }
 
-  // Linear-interpolation percentile (the standard method), e.g. percentile(arr, 0.25) = Q1.
-  function percentile(sortedArr, p) {
-    if (sortedArr.length === 1) return sortedArr[0];
-    var idx = p * (sortedArr.length - 1);
-    var lo = Math.floor(idx), hi = Math.ceil(idx);
-    if (lo === hi) return sortedArr[lo];
-    return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (idx - lo);
-  }
-
   // A club's "current form": the most recent shots (capped, so it never grows into a
-  // lifetime average as history piles up over a year), trimmed to the interquartile
-  // range to drop mishits/outliers, then averaged. Below a minimum sample size there
-  // isn't enough data for quartiles to mean anything, so it just falls back to a
-  // plain mean of everything logged so far.
+  // lifetime average as history piles up over a year), weighted so more recent shots
+  // count more than older ones within that window — no shots are excluded or treated
+  // as outliers; every logged shot contributes, just with less weight the older it is.
   var RECENT_WINDOW_CAP = 20;
-  var MIN_FOR_TRIMMED_STATS = 4;
 
   function recentRepresentativeDistance(club) {
     var all = club.distances;
     if (!all.length) return null;
-    if (all.length < MIN_FOR_TRIMMED_STATS) return avg(all);
 
     var windowSize = Math.min(all.length, RECENT_WINDOW_CAP);
     var recent = all.slice(-windowSize);
-    var sorted = recent.slice().sort(function (a, b) { return a - b; });
-    var q1 = percentile(sorted, 0.25);
-    var q3 = percentile(sorted, 0.75);
-    var trimmed = recent.filter(function (v) { return v >= q1 && v <= q3; });
-    return avg(trimmed.length ? trimmed : recent);
+    var weightSum = 0, valueSum = 0;
+    recent.forEach(function (v, i) {
+      var weight = i + 1; // oldest in the window = 1, most recent = windowSize
+      weightSum += weight;
+      valueSum += v * weight;
+    });
+    return valueSum / weightSum;
   }
 
   // NOTE on direction semantics (used in UI copy):
