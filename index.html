@@ -490,21 +490,21 @@
     border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
     box-shadow: 0 4px 10px rgba(0,0,0,0.25);
     transform: translateY(-50%);
+    transition: left 0.25s ease, right 0.25s ease;
   }
 
   .foot.lead {
-    left: 6px;
     border-radius: 55% 45% 42% 48% / 62% 55% 45% 38%;
   }
 
   .foot.trail {
-    right: 6px;
     border-radius: 45% 55% 48% 42% / 62% 55% 45% 38%;
   }
 
   .foot-label {
     position: absolute;
     top: calc(220px + 58px);
+    transition: left 0.25s ease, right 0.25s ease;
     font-size: 0.62rem;
     font-family: 'Oswald', sans-serif;
     letter-spacing: 0.04em;
@@ -512,8 +512,8 @@
     color: rgba(255,255,255,0.55);
   }
 
-  .foot-label.lead { left: 6px; width: 40px; text-align: center; }
-  .foot-label.trail { right: 6px; width: 40px; text-align: center; }
+  .foot-label.lead { width: 40px; text-align: center; }
+  .foot-label.trail { width: 40px; text-align: center; }
 
   .ball-marker {
     position: absolute;
@@ -564,6 +564,59 @@
     color: #9fc2ac;
     font-family: 'Oswald', sans-serif;
     letter-spacing: 0.04em;
+  }
+
+  /* Shoulder tilt mini-diagram */
+  .shoulder-card {
+    background: linear-gradient(160deg, var(--turf-dark) 0%, var(--turf-mid) 55%, var(--turf-light) 100%);
+    border-radius: 16px;
+    padding: 18px 18px 20px;
+    margin-top: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shoulder-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 24px);
+    pointer-events: none;
+  }
+
+  .shoulder-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #cfe6d7;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .shoulder-diagram {
+    margin: 0 10px;
+  }
+
+  .shoulder-svg {
+    width: 100%;
+    height: 70px;
+    display: block;
+  }
+
+  .shoulder-tip {
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: #cfe6d7;
+    line-height: 1.5;
+    position: relative;
+    z-index: 1;
+  }
+
+  .shoulder-tip strong {
+    color: var(--ball);
   }
 
   /* Stance tab category list */
@@ -1095,16 +1148,32 @@
   // Longer clubs require standing farther from the ball. Anchored to two commonly-cited
   // instructional figures (driver ~34in, mid-iron/5-iron ~24in, toe-to-ball-center,
   // pro-average setups) and interpolated/extrapolated linearly against standard club
-  // length for the other categories. See chat for sources.
+  // length for the other categories.
+  //
+  // stanceWidthIn = approximate heel-to-heel stance width (inches). Instructional
+  // sources vary and disagree on exact numbers, but consistently agree on the pattern:
+  // widest for the driver (~2-3in outside shoulder width), narrowing progressively
+  // down to wedges (near/inside hip width). Putter width is more personal-preference
+  // (no swing-power need) so it's set near shoulder width rather than following the
+  // same taper.
+  //
+  // shoulderTiltDeg = approximate degrees the trail shoulder sits below the lead
+  // shoulder at address. Driver benefits from a clearly tilted, teed-up setup (trail
+  // shoulder noticeably lower, promoting an upward strike); irons want much less tilt
+  // since they need a descending blow; putting wants level shoulders for a consistent
+  // stroke. Club-specific degree figures are weakly sourced (mostly coaching
+  // benchmarks/forum anecdotes, not peer-reviewed data) — treat these as a reasonable
+  // training target and directional guide, not an exact prescription. See chat for
+  // sources on both of these.
   var CATEGORIES = [
-    { key: 'Driver',                 desc: 'Just inside the front heel',            pct: 92, standIn: 34 },
-    { key: 'Fairway Woods',          desc: "A ball's width inside the front heel",  pct: 84, standIn: 29 },
-    { key: 'Hybrids',                desc: "A ball's width inside the front heel",  pct: 84, standIn: 26 },
-    { key: 'Long Irons (2, 3, 4)',   desc: 'Center to slightly forward',            pct: 58, standIn: 25 },
-    { key: 'Mid Irons (5, 6, 7)',    desc: 'Center',                                pct: 50, standIn: 24 },
-    { key: 'Short Irons (8, 9)',     desc: 'Center',                                pct: 50, standIn: 21 },
-    { key: 'Wedges',                 desc: 'Center to slightly back',               pct: 42, standIn: 19 },
-    { key: 'Putter',                 desc: 'Slightly forward of center',            pct: 55, standIn: 18 }
+    { key: 'Driver',                 desc: 'Just inside the front heel',            pct: 92, standIn: 34, stanceWidthIn: 22, shoulderTiltDeg: 10 },
+    { key: 'Fairway Woods',          desc: "A ball's width inside the front heel",  pct: 84, standIn: 29, stanceWidthIn: 19, shoulderTiltDeg: 8 },
+    { key: 'Hybrids',                desc: "A ball's width inside the front heel",  pct: 84, standIn: 26, stanceWidthIn: 18, shoulderTiltDeg: 7 },
+    { key: 'Long Irons (2, 3, 4)',   desc: 'Center to slightly forward',            pct: 58, standIn: 25, stanceWidthIn: 17, shoulderTiltDeg: 6 },
+    { key: 'Mid Irons (5, 6, 7)',    desc: 'Center',                                pct: 50, standIn: 24, stanceWidthIn: 15, shoulderTiltDeg: 4 },
+    { key: 'Short Irons (8, 9)',     desc: 'Center',                                pct: 50, standIn: 21, stanceWidthIn: 13, shoulderTiltDeg: 3 },
+    { key: 'Wedges',                 desc: 'Center to slightly back',               pct: 42, standIn: 19, stanceWidthIn: 11, shoulderTiltDeg: 2 },
+    { key: 'Putter',                 desc: 'Slightly forward of center',            pct: 55, standIn: 18, stanceWidthIn: 16, shoulderTiltDeg: 0 }
   ];
 
   var STAND_MIN_IN = 18, STAND_MAX_IN = 34, STAND_MIN_PX = 90, STAND_MAX_PX = 135;
@@ -1112,6 +1181,22 @@
   function standDistancePx(standIn) {
     var t = (standIn - STAND_MIN_IN) / (STAND_MAX_IN - STAND_MIN_IN);
     return Math.round(STAND_MIN_PX + t * (STAND_MAX_PX - STAND_MIN_PX));
+  }
+
+  // Wider stance -> feet closer to the rail's outer edges (small inset).
+  // Narrower stance -> feet pulled in toward the center (large inset).
+  var WIDTH_MIN_IN = 11, WIDTH_MAX_IN = 22, WIDTH_MIN_INSET_PX = 64, WIDTH_MAX_INSET_PX = 6;
+
+  function stanceFootInsetPx(widthIn) {
+    var t = (widthIn - WIDTH_MIN_IN) / (WIDTH_MAX_IN - WIDTH_MIN_IN);
+    return Math.round(WIDTH_MIN_INSET_PX + t * (WIDTH_MAX_INSET_PX - WIDTH_MIN_INSET_PX));
+  }
+
+  // Degrees of trail-shoulder drop -> pixels of visual drop in the shoulder-tilt diagram.
+  var TILT_MAX_DEG = 10, TILT_MAX_OFFSET_PX = 32;
+
+  function shoulderTiltOffsetPx(tiltDeg) {
+    return Math.round((tiltDeg / TILT_MAX_DEG) * TILT_MAX_OFFSET_PX);
   }
 
   function catByKey(key) {
@@ -1188,6 +1273,7 @@
     var ballOffsetPx = standDistancePx(category.standIn);
     var RAIL_Y = 220; // px from top of .stance-rail-wrap where the toe line sits
     var ballTopPx = RAIL_Y - ballOffsetPx; // ball line sits above (in front of) the toe line
+    var footInsetPx = stanceFootInsetPx(category.stanceWidthIn);
 
     var html = '';
     html += '<div class="stance-card">';
@@ -1200,18 +1286,50 @@
     html += '    <div class="stance-rail"></div>';
     html += '    <div class="stance-center-tick"></div>';
     html += '    <div class="stance-center-label">center</div>';
-    html += '    <div class="foot lead"></div>';
-    html += '    <div class="foot trail"></div>';
-    html += '    <div class="foot-label lead">Lead</div>';
-    html += '    <div class="foot-label trail">Trail</div>';
+    html += '    <div class="foot lead" style="left: ' + footInsetPx + 'px;"></div>';
+    html += '    <div class="foot trail" style="right: ' + footInsetPx + 'px;"></div>';
+    html += '    <div class="foot-label lead" style="left: ' + footInsetPx + 'px;">Lead</div>';
+    html += '    <div class="foot-label trail" style="right: ' + footInsetPx + 'px;">Trail</div>';
     html += '  </div>';
     html += '  <div class="stance-info">';
     html += '    <div class="cat-name">' + escapeHtml(category.key) + '</div>';
     html += '    <div class="cat-desc">' + escapeHtml(category.desc) + '</div>';
-    html += '    <div class="cat-pct">' + pct + '% along stance rail &middot; &asymp;' + category.standIn + '&Prime; from your toe line</div>';
+    html += '    <div class="cat-pct">' + pct + '% along stance rail &middot; &asymp;' + category.standIn + '&Prime; from toe line &middot; &asymp;' + category.stanceWidthIn + '&Prime; stance width</div>';
     html += '  </div>';
     html += '</div>';
+    html += renderShoulderCard(category);
     container.innerHTML = html;
+  }
+
+  function shoulderTipText(tiltDeg) {
+    if (tiltDeg === 0) return 'Keep your shoulders level — square to the ground — for the most repeatable stroke.';
+    if (tiltDeg <= 3) return 'Shoulders stay close to level here; just a touch of trail-shoulder drop so you can still hit down through the ball.';
+    if (tiltDeg <= 6) return 'A moderate tilt — trail shoulder a few degrees lower than lead — while still favoring a descending strike.';
+    return 'Tilt noticeably more here — trail shoulder clearly lower than lead — so you can sweep or hit up through the ball instead of down into it.';
+  }
+
+  function renderShoulderCard(category) {
+    var tiltDeg = category.shoulderTiltDeg;
+    var offsetPx = shoulderTiltOffsetPx(tiltDeg);
+    var midY = 35;
+    var leadY = midY - offsetPx / 2;
+    var trailY = midY + offsetPx / 2;
+
+    var svg = '<svg class="shoulder-svg" viewBox="0 0 200 70" preserveAspectRatio="xMidYMid meet">';
+    svg += '<line x1="0" y1="' + midY + '" x2="200" y2="' + midY + '" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" />';
+    svg += '<line x1="60" y1="' + leadY.toFixed(1) + '" x2="140" y2="' + trailY.toFixed(1) + '" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round" />';
+    svg += '<circle cx="60" cy="' + leadY.toFixed(1) + '" r="8" fill="#f8f5ec" stroke="#1c7a45" stroke-width="2" />';
+    svg += '<circle cx="140" cy="' + trailY.toFixed(1) + '" r="8" fill="#f8f5ec" stroke="#c1553a" stroke-width="2" />';
+    svg += '<text x="60" y="58" font-size="9" fill="rgba(255,255,255,0.5)" text-anchor="middle">LEAD</text>';
+    svg += '<text x="140" y="58" font-size="9" fill="rgba(255,255,255,0.5)" text-anchor="middle">TRAIL</text>';
+    svg += '</svg>';
+
+    var html = '<div class="shoulder-card">';
+    html += '  <div class="shoulder-title">Shoulder tilt at address</div>';
+    html += '  <div class="shoulder-diagram">' + svg + '</div>';
+    html += '  <div class="shoulder-tip"><strong>' + (tiltDeg === 0 ? 'Level' : '&asymp;' + tiltDeg + '&deg;') + '</strong> &mdash; ' + shoulderTipText(tiltDeg) + '</div>';
+    html += '</div>';
+    return html;
   }
 
   function escapeHtml(s) {
